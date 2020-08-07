@@ -14,9 +14,8 @@ import (
 var dag map[string]map[string]int
 func main() {
 	// config
-	packageName := *flag.String("app", "beego", "package name")
+	pkgRootName := *flag.String("app", "beego", "package name")
 	path := *flag.String("path", "/Users/gaohongwei/go/src/github.com/astaxie/beego", "app path")
-	depth := *flag.Int("dep", 10, "modules depth")
 	dotFilePath := *flag.String("dot-filepath", "./dag.dot", "dot out path")
 	flag.Parse()
 	path, _ = filepath.Abs(path)
@@ -25,14 +24,10 @@ func main() {
 		fmt.Print("app path can not use")
 		return
 	}
-	if depth < 1 {
-		fmt.Printf("depth is not valid. must bigger than 0")
-		return
-	}
-	fmt.Printf("path: %s, depth: %d, dot filepath: %s \n", path, depth, dotFilePath)
+	fmt.Printf("packageName: %s, path: %s, dot filepath: %s \n", pkgRootName, path, dotFilePath)
 	fmt.Println("start...")
 	dag = make(map[string]map[string]int)
-	parse(path, depth)
+	parse(pkgRootName, path)
 	for k, vm := range dag {
 		for vk, _ := range vm {
 			fmt.Println(k, vk)
@@ -43,7 +38,7 @@ func main() {
 }
 
 
-func parse(path string, depth int) {
+func parse(pkgRootName, path string) {
 	err := filepath.Walk(path, func(singlePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n",singlePath , err)
@@ -54,15 +49,10 @@ func parse(path string, depth int) {
 			//fmt.Printf("skipping a dir without errors: %+v \n", info.Name())
 			return filepath.SkipDir
 		}
-		// dep filter
-		if info.IsDir() &&  pathDepth(singlePath) - pathDepth(path) >= depth{
-			//fmt.Printf("skipping a dir with depth limit: %+v \n", singlePath)
-			return filepath.SkipDir
-		}
 		// select go file
 		if !info.IsDir() && strings.Contains(info.Name(), ".go") {
 			fmt.Printf("visited file or dir: %q %q\n",singlePath, info.Name())
-			parseSingleFile(singlePath)
+			parseSingleFile(pkgRootName, path, singlePath)
 		}
 		return nil
 	})
@@ -71,14 +61,14 @@ func parse(path string, depth int) {
 	}
 }
 
-func parseSingleFile(singlePath string) {
+func parseSingleFile(pkgRootName, path, singlePath string) {
 	f, err := os.Open(singlePath)
 	if err != nil {
 		panic(fmt.Sprintf("parse single file %s error:%s", singlePath, err.Error()))
 	}
 	r := bufio.NewReader(f)
 	isImport := false
-	packageName := ""
+	packageName := packageNamePro(path, singlePath)
 	for {
 		line,_, err := r.ReadLine()
 		if err == io.EOF {
@@ -86,10 +76,6 @@ func parseSingleFile(singlePath string) {
 		}
 		if err != nil {
 			panic(fmt.Sprintf("read single file %s error:%s", singlePath, err.Error()))
-		}
-		if strings.HasPrefix(string(line), "package") {
-			packList := strings.Split(string(line), " ")
-			packageName = packList[len(packList) -1]
 		}
 		if string(line) == "import (" {
 			isImport = true
@@ -99,7 +85,9 @@ func parseSingleFile(singlePath string) {
 			isImport = false
 			break
 		}
-		if isImport == true {
+		fmt.Println("bbbbb:", string(line))
+		if isImport == true && isSameRoot(string(line), path){
+			fmt.Println("aaaaaa:", string(line))
 			if _, ok := dag[packageName]; ok {
 				dag[packageName][string(line)] = 1
 			}else {
@@ -114,18 +102,28 @@ func parseSingleFile(singlePath string) {
 func writeToDotFile(dotFilePath string) {
 }
 
-// return the path depth
-func pathDepth(path string) int{
-	depth := 0
-	for i := 0; i < len(path); i++ {
-		if os.IsPathSeparator(path[i]) {
-			depth++
-		}
-	}
-	return depth
-}
-
 func Exist(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil || os.IsExist(err)
+}
+
+
+func packageNamePro(path, singlePath string) string {
+	ret := ""
+	pathSplit := strings.Split(path, "/")
+	SinglePathSplit := strings.Split(singlePath, "/")
+	for i:=len(pathSplit)-1; i < len(SinglePathSplit); i++{
+		if i == len(SinglePathSplit) - 1 {
+			ret += SinglePathSplit[i]
+		}else {
+			ret += SinglePathSplit[i] + "/"
+		}
+	}
+	return ret
+}
+
+func isSameRoot(packageName, path string) bool {
+	pathSplit := strings.Split(path, "/")
+	singlePathSplit := strings.Split(packageName, "/")
+	return pathSplit[len(pathSplit) - 1] == singlePathSplit[0]
 }
