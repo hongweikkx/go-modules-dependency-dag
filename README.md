@@ -25,7 +25,7 @@ dot -T svg dag.dot > dag.svg
 ```
 
 example:
-![image](
+![image](https://github.com/hongweikkx/go-modules-dependency-dag/blob/master/example/dag.png)
 
 ## refer
 [https://github.com/legendtkl/godag](https://github.com/legendtkl/godag)
