@@ -138,4 +138,3 @@ func importPkgName(line, pkgRootName string) string{
 
 }
 
-
