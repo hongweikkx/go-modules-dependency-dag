@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -32,11 +34,6 @@ func main() {
 	fmt.Println("start...")
 	dag = make(map[string]map[string]int)
 	parse(pkgRootName, path)
-	for k, vm := range dag {
-		for vk, _ := range vm {
-			fmt.Println(k, vk)
-		}
-	}
 	writeToDotFile(dotFilePath)
 	fmt.Println("end...")
 }
@@ -65,7 +62,6 @@ func parse(pkgRootName, path string) {
 }
 
 func parseSingleFile(pkgRootName, path, singlePath string) {
-	fmt.Println("start...", singlePath)
 	f, err := os.Open(singlePath)
 	if err != nil {
 		panic(fmt.Sprintf("parse single file %s error:%s", singlePath, err.Error()))
@@ -105,20 +101,27 @@ func parseSingleFile(pkgRootName, path, singlePath string) {
 				tmp[importName] = 1
 				dag[packageName] = tmp
 			}
-			fmt.Println("dag:", packageName, importName)
 		}
 	}
 }
 
 func writeToDotFile(dotFilePath string) {
 	fd, _ := os.OpenFile(dotFilePath, os.O_RDWR|os.O_CREATE, 0644)
+	indegree := make(map[string]int)
 	defer fd.Close()
 	fd.Write([]byte("digraph G {\n"))
 	for k, vm := range dag {
 		for v, _ := range vm {
+			indegree[v]++
 			fd.Write([]byte(fmt.Sprintf("\t\"%s\" -> \"%s\"\n", k, v)))
 		}
 	}
+	colors := colorUseIndegree(indegree)
+	//"A" [shape=circle, style=filled, fillcolor=red]
+	for i:= 0; i<len(colors); i++{
+		fd.Write([]byte(fmt.Sprintf("\t\"%s\" [fillcolor=\"%s\", style=filled]\n", colors[i].Label, colors[i].Color)))
+	}
+
 	fd.Write([]byte("}\n"))
 }
 
@@ -138,3 +141,52 @@ func importPkgName(line, pkgRootName string) string{
 
 }
 
+type colorNode struct {
+	Label string
+	Color string
+	InDegree int
+}
+
+type colorNodes []colorNode
+
+func colorUseIndegree(indegree map[string]int) colorNodes{
+	var nodes colorNodes
+	for k, v := range indegree {
+		nodes = append(nodes, colorNode{Label:k, InDegree:v})
+	}
+	sort.Sort(nodes)
+	g := 255
+	for i := 0; i < len(nodes); i++ {
+		g = g - 255/len(nodes)
+		nodes[i].Color = rgb2hex(255, int64(g), 0)
+	}
+	return nodes
+}
+
+func (nodes colorNodes) Len() int{
+	return len(nodes)
+}
+
+func (nodes colorNodes) Swap(i, j int) {
+	nodes[i], nodes[j] = nodes[j], nodes[i]
+}
+
+func (nodes colorNodes) Less(i, j int) bool {
+	return nodes[i].InDegree < nodes[j].InDegree
+}
+
+// rgb -> hex
+func rgb2hex(r, g, b int64) string{
+	r16 := t2x(r)
+	g16 := t2x(g)
+	b16 := t2x(b)
+	return "#" + r16 + g16 + b16
+}
+
+func t2x (t int64 ) string {
+	result := strconv.FormatInt(t, 16)
+	if len(result) == 1 {
+		result = "0" + result
+	}
+	return result
+}

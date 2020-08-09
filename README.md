@@ -1,5 +1,6 @@
 # go-modules-dependency-dag
-分析指定路径下的go模块依赖。
+分析指定路径下的go模块依赖。<br>
+并用颜色区分被其他模块import的频次。从黄色到红色，频次递增。 
 
 ## Install
 go get -u github.com/hongweikkx/go-modules-dependency-dag
