@@ -1,5 +1,5 @@
 # go-modules-dependency-dag
-分析指定路径下的go模块依赖。<br>
+分析指定路径下的go模块(除第三方包之外)依赖。<br>
 并用颜色区分被其他模块import的频次。从黄色到红色，频次递增。 
 
 ## Install
@@ -29,4 +29,5 @@ example:
 ![image](https://github.com/hongweikkx/go-modules-dependency-dag/blob/master/example/dag.png)
 
 ## refer
-[https://github.com/legendtkl/godag](https://github.com/legendtkl/godag)
+* [https://github.com/legendtkl/godag](https://github.com/legendtkl/godag)
+* [Graphviz](http://www.graphviz.org/)
