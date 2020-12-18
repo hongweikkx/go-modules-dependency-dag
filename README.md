@@ -1,9 +1,12 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/hongweikkx/go-modules-dependency-dag)](https://goreportcard.com/report/github.com/hongweikkx/go-modules-dependency-dag)
+
 # go-modules-dependency-dag
-分析指定路径下的go模块(除第三方包之外)依赖。<br>
-并用颜色区分被其他模块import的频次。从黄色到红色，频次递增。 
+Analyze the dependencies of go modules (except third-party packages) under the specified path. Use colors to distinguish the frequency of being imported by other modules.From yellow to red, Frequency increase
 
 ## Install
+```
 go get -u github.com/hongweikkx/go-modules-dependency-dag
+```
 
 ## Run
 ```
