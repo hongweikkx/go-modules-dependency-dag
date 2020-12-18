@@ -13,6 +13,7 @@ import (
 )
 
 var dag map[string]map[string]int
+
 func main() {
 	// config
 	pkgRootName := *flag.String("app", "", "package name")
@@ -38,15 +39,14 @@ func main() {
 	fmt.Println("end...")
 }
 
-
 func parse(pkgRootName, path string) {
 	err := filepath.Walk(path, func(singlePath string, info os.FileInfo, err error) error {
 		if err != nil {
-			fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n",singlePath , err)
+			fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", singlePath, err)
 			return err
 		}
 		// skip vendor
-		if info.IsDir() && info.Name() == "vendor"{
+		if info.IsDir() && info.Name() == "vendor" {
 			//fmt.Printf("skipping a dir without errors: %+v \n", info.Name())
 			return filepath.SkipDir
 		}
@@ -70,7 +70,7 @@ func parseSingleFile(pkgRootName, path, singlePath string) {
 	isImport := false
 	packageName := ""
 	for {
-		line,_, err := r.ReadLine()
+		line, _, err := r.ReadLine()
 		if err == io.EOF {
 			break
 		}
@@ -79,13 +79,13 @@ func parseSingleFile(pkgRootName, path, singlePath string) {
 		}
 		if strings.HasPrefix(string(line), "package") {
 			packageNames := strings.Split(string(line), " ")
-			packageName += filepath.Join(packageName, packageNames[len(packageNames) -1])
+			packageName += filepath.Join(packageName, packageNames[len(packageNames)-1])
 		}
 		if string(line) == "import (" {
 			isImport = true
 			continue
 		}
-		if isImport == true && string(line) == ")"{
+		if isImport == true && string(line) == ")" {
 			isImport = false
 			break
 		}
@@ -96,7 +96,7 @@ func parseSingleFile(pkgRootName, path, singlePath string) {
 			}
 			if _, ok := dag[packageName]; ok {
 				dag[packageName][importName] = 1
-			}else {
+			} else {
 				tmp := make(map[string]int)
 				tmp[importName] = 1
 				dag[packageName] = tmp
@@ -111,14 +111,14 @@ func writeToDotFile(dotFilePath string) {
 	defer fd.Close()
 	fd.Write([]byte("digraph G {\n"))
 	for k, vm := range dag {
-		for v, _ := range vm {
+		for v := range vm {
 			indegree[v]++
 			fd.Write([]byte(fmt.Sprintf("\t\"%s\" -> \"%s\"\n", k, v)))
 		}
 	}
 	colors := colorUseIndegree(indegree)
 	//"A" [shape=circle, style=filled, fillcolor=red]
-	for i:= 0; i<len(colors); i++{
+	for i := 0; i < len(colors); i++ {
 		fd.Write([]byte(fmt.Sprintf("\t\"%s\" [fillcolor=\"%s\", style=filled]\n", colors[i].Label, colors[i].Color)))
 	}
 
@@ -130,29 +130,28 @@ func Exist(filename string) bool {
 	return err == nil || os.IsExist(err)
 }
 
-
-func importPkgName(line, pkgRootName string) string{
+func importPkgName(line, pkgRootName string) string {
 	if index := strings.Index(line, pkgRootName); index != -1 {
 		name := strings.Trim(line[index:], "\"")
 		names := strings.Split(name, "/")
-		return names[len(names) - 1]
+		return names[len(names)-1]
 	}
 	return ""
 
 }
 
 type colorNode struct {
-	Label string
-	Color string
+	Label    string
+	Color    string
 	InDegree int
 }
 
 type colorNodes []colorNode
 
-func colorUseIndegree(indegree map[string]int) colorNodes{
+func colorUseIndegree(indegree map[string]int) colorNodes {
 	var nodes colorNodes
 	for k, v := range indegree {
-		nodes = append(nodes, colorNode{Label:k, InDegree:v})
+		nodes = append(nodes, colorNode{Label: k, InDegree: v})
 	}
 	sort.Sort(nodes)
 	g := 255
@@ -163,7 +162,7 @@ func colorUseIndegree(indegree map[string]int) colorNodes{
 	return nodes
 }
 
-func (nodes colorNodes) Len() int{
+func (nodes colorNodes) Len() int {
 	return len(nodes)
 }
 
@@ -176,14 +175,14 @@ func (nodes colorNodes) Less(i, j int) bool {
 }
 
 // rgb -> hex
-func rgb2hex(r, g, b int64) string{
+func rgb2hex(r, g, b int64) string {
 	r16 := t2x(r)
 	g16 := t2x(g)
 	b16 := t2x(b)
 	return "#" + r16 + g16 + b16
 }
 
-func t2x (t int64 ) string {
+func t2x(t int64) string {
 	result := strconv.FormatInt(t, 16)
 	if len(result) == 1 {
 		result = "0" + result
